@@ -1,0 +1,169 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  aws-polly-service-test
+
+  SAM Template for aws-polly-service-test
+
+Globals:
+  Function:
+    Timeout: 3
+    LoggingConfig:
+      LogFormat: JSON
+Resources:
+  AudioQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      VisibilityTimeout: 30
+
+  AudioBucket:
+    Type: AWS::S3::Bucket
+
+  JobStatusTable:
+    Type: AWS::Serverless::SimpleTable
+    Properties:
+      PrimaryKey:
+        Name: jobId
+        Type: String
+
+  SynthesizeFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/
+      Handler: app.synthesizeHandler
+      Runtime: nodejs20.x
+      Architectures:
+        - x86_64
+      Environment:
+        Variables:
+          QUEUE_URL: !Ref AudioQueue
+          TABLE_NAME: !Ref JobStatusTable
+      Events:
+        Synthesize:
+          Type: Api
+          Properties:
+            Path: /synthesize
+            Method: post
+      Policies:
+        - SQSSendMessagePolicy:
+            QueueName: !GetAtt AudioQueue.QueueName
+        - DynamoDBCrudPolicy:
+            TableName: !Ref JobStatusTable
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: es2020
+        Sourcemap: true
+        EntryPoints:
+          - app.ts
+
+  ProcessorFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/
+      Handler: app.processorHandler
+      Runtime: nodejs20.x
+      Architectures:
+        - x86_64
+      Timeout: 30
+      Environment:
+        Variables:
+          BUCKET_NAME: !Ref AudioBucket
+          TABLE_NAME: !Ref JobStatusTable
+      Events:
+        QueueEvent:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt AudioQueue.Arn
+            BatchSize: 10
+      Policies:
+        - S3WritePolicy:
+            BucketName: !Ref AudioBucket
+        - DynamoDBCrudPolicy:
+            TableName: !Ref JobStatusTable
+        - Statement:
+            - Effect: Allow
+              Action:
+                - polly:SynthesizeSpeech
+              Resource: "*"
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: es2020
+        Sourcemap: true
+        EntryPoints:
+          - app.ts
+
+  UIFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/
+      Handler: app.uiHandler
+      Runtime: nodejs20.x
+      Architectures:
+        - x86_64
+      Events:
+        UIEvent:
+          Type: Api
+          Properties:
+            Path: /textToAudio
+            Method: get
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: es2020
+        Sourcemap: true
+        EntryPoints:
+          - app.ts
+
+  StatusFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/
+      Handler: app.statusHandler
+      Runtime: nodejs20.x
+      Architectures:
+        - x86_64
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref JobStatusTable
+          BUCKET_NAME: !Ref AudioBucket
+      Events:
+        StatusEvent:
+          Type: Api
+          Properties:
+            Path: /status/{jobId}
+            Method: get
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref JobStatusTable
+        - Statement:
+            - Effect: Allow
+              Action:
+                - s3:GetObject
+              Resource: !Sub "arn:aws:s3:::${AudioBucket}/*"
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: es2020
+        Sourcemap: true
+        EntryPoints:
+          - app.ts
+
+Outputs:
+  ServiceApi:
+    Description: API Gateway endpoint URL for Prod stage
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/synthesize"
+  UIEndpoint:
+    Description: URL for the Text To Audio UI
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/textToAudio"
+  AudioBucketName:
+    Description: Name of the Audio S3 Bucket
+    Value: !Ref AudioBucket
+  AudioQueueUrl:
+    Description: URL of the Audio SQS Queue
+    Value: !Ref AudioQueue

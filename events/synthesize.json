@@ -1,0 +1,14 @@
+{
+  "body": "{\"text\": \"Hello from AWS Polly! This is queued calculation.\", \"voiceId\": \"Joanna\", \"outputFormat\": \"mp3\"}",
+  "resource": "/synthesize",
+  "path": "/synthesize",
+  "httpMethod": "POST",
+  "isBase64Encoded": false,
+  "headers": {
+    "Content-Type": "application/json"
+  },
+  "requestContext": {
+    "httpMethod": "POST",
+    "resourcePath": "/synthesize"
+  }
+}
