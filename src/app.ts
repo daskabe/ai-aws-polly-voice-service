@@ -663,7 +663,7 @@ export const uiHandler = async (event: APIGatewayProxyEvent): Promise<APIGateway
                 </div>
                
             </main>
-            <div class="shake-interval" style="text-align: center; font-weight: bold; font-size: 1.2rem; margin-top: 4rem;">Need AWS Expert? Find me on 🔗‍️ <a href="https://www.linkedin.com/in/dawita/" target="_blank">LinkedIn</a></div>
+            <div class="shake-interval" style="text-align: center; font-weight: bold; font-size: 1.2rem; margin-top: 4rem;">Find me on 🔗‍️ <a href="https://www.linkedin.com/in/dawita/" target="_blank">LinkedIn</a></div>
             </div>
         </div>
     </div>
