@@ -15,8 +15,7 @@ The application uses the following AWS resources
 
 
 ## Deploy the sample application
-
-To use the SAM CLI, you need the following tools.
+You need sam CLI and the following tools to build and deploy this app.
 
 * SAM CLI - [Install the SAM CLI](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-install.html)
 * Node.js - [Install Node.js 20](https://nodejs.org/en/),
